@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
+    <meta name="generator" content="Hugo 0.84.0">
+    <title>Signin Template · Bootstrap v5.0</title>
+    <!-- <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script> -->
+    <link rel="canonical" href="https://getbootstrap.com/docs/5.0/examples/sign-in/">
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+    <script>
+        /*데이터 베이스 생성 시작(User Table)*/
+        var systemDB;
+        var dataset;
+        var checkId_duplicated = false; //아이디 중복확인 여부
+        $(document).ready(function () {
+            initDatabase();
+
+            // 입력
+            $("#btn_insert").click(function() {
+                if (checkId_duplicated == false){ // 아이디 중복확인을 안 했을 경우
+                    alert('아아디 중복확인 해주시기 바랍니다');
+                }
+                else{ // 아이디 중복확인을 했을 경우 -> 비밀번호를 올바르게 입력했는지 확인 후 db반영                    
+                    var admin_password = document.getElementById('password').value;
+                    var admin_confirmPassword = document.getElementById('confirmPassword').value;
+                    if(admin_password == admin_confirmPassword){
+                        insertDB(systemDB);
+                        alert('회원가입 성공!');
+                    }
+                    else{
+                        alert("비밀번호와 재입력 비밀번호가 일치하지 않습니다.");
+                        $("#password").val("");
+                        $("#confirmPassword").val("");
+                    }
+                    
+                }
+                
+            });
+            $("#btn_idCheck").click(function() {
+                checkId(systemDB)
+            });
+        });
+        function initDatabase() {
+            if (!window.openDatabase) {
+                alert("현재 브라우저는 Web SQL Database를 지원하지 않습니다");
+            } else {
+                var shortName = 'Board1';
+                var version = '1.0';
+                var displayName = 'Board DB';
+                var maxSize = 1024 * 64; // in bytes
+                var db = openDatabase(shortName, version, displayName, maxSize);
+            }
+
+            createTable(db);
+            //selectAllList(db);
+            systemDB = db;
+        }
+        function createTable(db) {
+            // var strCreate = "CREATE TABLE IF NOT EXISTS tbl_board"
+            //     + " (idx INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+            //     + " username TEXT NOT NULL,"
+            //     + " content TEXT NOT NULL,"
+            //     + " regdate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)";
+            var strCreateUserTable = "CREATE TABLE IF NOT EXISTS User"
+                + " (user_id INTEGER,"
+                + " username TEXT,"
+                + " password TEXT,"
+                + " teamnumber INTEGER ,"
+                + " subwork TEXT,"
+                + " worksuccess TEXT)";
+            // var strCreatetask = "CREATE TABLE IF NOT EXISTS Task"
+            //     + " (teamnumber INTEGER NOT NULL,"
+            //     + " assignemt TEXT NOT NULL,"
+            //     + " worksuccess TEXT NOT NULL,"
+            //     + " dueday TEXT NOT NULL)";
+            // var strCreatetodo = "CREATE TABLE IF NOT EXISTS TODO"
+            //     + " (idx INTEGER NOT NULL ,"
+            //     + " teamnumber TEXT NOT NULL,"
+            //     + " todolist TEXT NOT NULL,"
+            //     + " success TEXT NOT NULL)";
+            // var strCreateteam = "CREATE TABLE IF NOT EXISTS TEAM"
+            //     + " (teamnumber INTEGER NOT NULL ,"
+            //     + " members TEXT NOT NULL,"
+            //     + " subject TEXT NOT NULL,"
+            //     + " dueday TEXT NOT NULL)";
+            db.transaction(function (tx) {
+                //tx.executeSql(strCreate);
+                //tx.executeSql(strCreatetask);
+                //tx.executeSql(strCreatetodo);
+                //tx.executeSql(strCreateteam);
+                tx.executeSql(strCreateUserTable);
+            });
+        }
+        function insertDB(db) {
+            var strSql = "INSERT INTO Admin (admin_id, admin_name, admin_pw) VALUES (?, ?, ?, ?)";
+            var user_id = $('#adminId').val().trim();
+            var username = $('#adminName').val().trim();
+            var password = $('#password').val().trim();
+            db.transaction(function (tx) {
+                tx.executeSql(strSql, [user_id, username, password, teamnumber], loadAndReset, errorHandler);
+            });
+        }
+        function loadAndReset() {
+            resetForm();
+            //selectAllList(systemDB);
+        }
+
+        function resetForm() {
+            $("#userId").val("");
+            $("#userName").val("");
+            $("#password").val("");
+            $("#confirmPassword").val("");
+            $("#teamNumber").val("1");
+        }
+
+        function errorHandler(error) {
+            alert('Error: '+error.message+' (Code '+error.code+')');
+        }
+        /*데이터 베이스 생성 끝*/
+
+    
+        function checkId(db){ // 아이디 중복 확인
+            var strSql = "SELECT admin_id FROM Admin"; 
+            var admin_id = $('#adminId').val().trim();
+            db.transaction(function (tx) {
+                tx.executeSql(strSql, [], function (tx, result) { 
+                    console.log('getPassword()/result: ', result);
+                    console.log('getPassword()/result.rows: ', result.rows);
+                    console.log('getPassword()/result.rows[0].admin_id: ', result.rows[0].admin_id);
+                    var admin_id_list = result.rows;
+                    if (admin_id_list.length > 0){ // 회원가입한 관리자가 한 명 이상 있을 경우
+                        for(var i = 0; i < admin_id_list.length; i++){
+                            if(admin_id == admin_id_list[i].admin_id){
+                                checkId_duplicated = false;
+                                alert('이미 동일한 아이디가 존재합니다');
+                                $("#adminId").val("");
+                                break
+                            }
+                            else{
+                                checkId_duplicated = true;
+                            }
+                        }
+                        console.log('checkId_duplicated: ', checkId_duplicated)
+                        if(checkId_duplicated == true){
+                            alert('사용가능한 아이디 입니다.');
+                        }
+                    }
+                    else{ // 회원가입한 관리자가 없을 경우
+                        alert('사용가능한 아이디 입니다.');
+                    }
+                }); 
+            }); 
+            
+        }
+
+        /*팀 선택 -> 개별업무선택 구현*/
+        // let cat1_num = new Array(1, 2, 3); // 화면에 안 보이는 부분
+        // let cat1_name = new Array('1', '2', '3'); // 화면에 보이는 부분
+        // // 팀1 - 웹앱 ('자바스크립트 함수구성', 'html페이지 구성', 'css구성')
+        // // 팀2 - 메타버스 ('아바타 만들기', '음성테스트', '텍스트 타이핑')
+        // // 팀3 - 커뮤니티 만들기 ('게시판 구성', '서버 연동', '데이터베이스 연동')
+        // let cat2_num = new Array();
+        // let cat2_name = new Array();
+        // cat2_num[1] = new Array(4, 5, 6);
+        // cat2_name[1] = new Array('자바스크립트 함수구성', 'html페이지 구성', 'css구성');
+
+        // cat2_num[2] = new Array(7, 8, 9);
+        // cat2_name[2] = new Array('아바타 만들기', '음성테스트', '텍스트 타이핑');
+
+        // cat2_num[3] = new Array(10, 11, 12);
+        // cat2_name[3] = new Array('게시판 구성', '서버 연동', '데이터베이스 연동');
+        // function cat1_change(key, sel){
+        //     if(key == '') return;
+        //     let val = cat2_num[key];
+        //     let name = cat2_name[key];
+        //     for(i=sel.length-1; i >= 0; i--){
+        //         sel.options[i] = null;
+        //     }
+        //     sel.options[0] = new Option('-개별 업무 선택-', '', '', 'true');
+        //     for(i=0; i<name.length; i++){
+        //         sel.options[i+1] = new Option(name[i], val[i])
+        //     }
+        // }
+    </script>
+
+
+
+
+    <!-- Bootstrap core CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+    <style>
+        .bd-placeholder-img {
+            font-size: 1.125rem;
+            text-anchor: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
+        @media (min-width: 768px) {
+            .bd-placeholder-img-lg {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+
+
+    <!-- Custom styles for this template -->
+    <link href="./css/signin.css" rel="stylesheet">
+</head>
+<body class="text-center">
+
+<main class="form-signin">
+    <form>
+        <img class="mb-4" src="hufslogo.jpg" alt="" width="72" height="57">
+        <h1 class="h3 mb-3 fw-normal">관리자 회원가입</h1>
+        <div class = "form-floating">
+            <input type="text" class="form-control" id="adminName" placeholder="이름 입력">
+            <label for="floatingInput">이름</label>
+        </div>
+
+        <div class="form-floating">
+            <input type="text" class="form-control" id="adminId" placeholder="아이디 입력">
+            <label for="floatingInput">아이디</label>
+        </div>
+        <div class="form-floating">
+            <input type="text" class="form-control" id="adminId" placeholder="아이디 입력">
+            <label for="floatingInput">아이디</label>
+            <input type="button" id="btn_idCheck" value="아이디 중복확인">
+        </div>
+
+        <div class="form-floating">
+            <input type="password" class="form-control" id="password" placeholder="비밀번호 입력">
+            <label for="floatingPassword">비밀번호</label>
+        </div>
+        <div class="form-floating">
+            <input type="password" class="form-control" id="confirmPassword" placeholder="비밀번호 재입력">
+            <label for="floatingPassword">비밀번호 확인</label>
+        </div>
+        <!-- <select name="teamNumber" id = "teamNumber">
+            <option>-팀 번호 선택-</option> 
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select> -->
+
+    </form>
+        <button id="btn_insert" class="w-100 btn btn-lg btn-primary" type="submit">회원가입</button>
+        <p>
+        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts" onclick="document.location.href='AdminLogin.html'">
+            <div class="btn" ><i class="go-to-teampage"></i></div>
+            로그인 하러가기
+        </a>
+        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts" onclick="document.location.href='AdminRegister.html'">
+            <div class="btn" ><i class="go-to-teampage"></i></div>
+            회원가입 하러가기
+        </a>
+        <p class="mt-5 mb-3 text-muted">&copy; 2021 Made by team '막둥이'</p>
+        <p class="mt-5 mb-3 text-muted">&copy; 구성원: 고경환, 곽진섭, 박재홍, 이서영, 최재호</p>
+</main>
+
+</body>
+
+</html>
+

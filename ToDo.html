@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <title>To-Do page</title>
+    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
+    <link href="css/styles.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+
+    <!-- 달력을 위해 필요한 것 -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+    <!-- <link rel="stylesheet" href="/resources/demos/style.css"> -->
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js" crossorigin="anonymous"></script>
+</head>
+<style>
+    #span_btn { 
+        border: solid 1px;
+    }
+</style>
+<body class="sb-nav-fixed">
+<nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+    <!-- Navbar Brand-->
+    <a class="navbar-brand ps-3" href="index.html">팀프로젝트 도우미</a>
+    <!-- Sidebar Toggle-->
+    <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars"></i></button>
+    <!-- Navbar Search-->
+    <form class="d-none d-md-inline-block form-inline ms-auto me-0 me-md-3 my-2 my-md-0">
+
+    </form>
+    <!-- Navbar-->
+    <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+    </ul>
+</nav>
+<div id="layoutSidenav">
+    <div id="layoutSidenav_nav">
+        <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+            <div class="sb-sidenav-menu">
+                <div class="nav">
+                    <div class="sb-sidenav-menu-heading">Interface</div>
+                    <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts" onclick="gotoTeampage();">
+                        <div class="btn" ><i class="go-to-teampage"></i></div>
+                        Team Pages
+                    </a>
+                    <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages" aria-expanded="false" aria-controls="collapsePages" onclick="gotoTodo();">
+                        <div class="btn"><i class="go-to-TODO"></i></div>
+                        To-Do
+                    </a>
+                    <div class="collapse" id="collapsePages" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                    </div>
+                </div>
+            </div>
+            <div class="sb-sidenav-footer">
+                <div class="small">Logged in as:</div>
+                <span id='printval'></span>
+            </div>
+        </nav>
+    </div>
+    <div id="layoutSidenav_content">
+        <main>
+            <div class="container-fluid px-4">
+                <h1 class="mt-4">To-Do List</h1>
+            </div>
+        </main>
+
+        <div class="row">
+            <div class="col-xl-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <fieldset>
+                            <legend>To-Do List</legend>
+                            <ol id="list">
+                                <li>
+                                    <label id="deadline">마감일: </label>
+                                    <!-- <input id="username" type="text" placeholder="마감일을 기입해주세요..." required autofocus> -->
+                                    <input id="datepicker" type="text" placeholder="마감일을 기입해주세요..." required >
+                                </li>
+                                <li>
+                                    <label for="personal_to_do">할일: </label>
+                                    <input id="personal_to_do" type="text" placeholder="할일을 작성해주세요..." required>
+                                </li>
+                            </ol>
+                            <div class="btn_set">
+                                <a class="btn btn-primary" id="btn_insert" >할일 추가</a>
+                                <a class="btn btn-primary" id="btn_update">할일 수정</a>
+                                <a class="btn btn-primary" id="btn_test">마감일 출력</a>
+                                <!--    <span id="btn_update" class="btn">할일수정</span>-->
+                                <!--                                <span id="btn_test" class="btn" >마감일 출력</span>-->
+                            </div>
+                        </fieldset>
+                    </div>
+
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar me-1"></i>
+                        앞으로 해야할 일들
+                    </div>
+                    <div id="boardlist" class="boardlist">list</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+        </div>
+    </div>
+
+</div>
+
+<script>
+    var systemDB;
+    var dataset;
+    var user_id_global
+    var index_global = 0; // 할일 추가시 사용할 todo의 인덱스값
+    var update_index_global = 0; // 할일 수정시 사용할 todo의 인덱스값
+
+
+    $(document).ready(function () {
+        initDatabase();
+        user_id_global = location.href.substr(
+            location.href.lastIndexOf('=') + 1
+        );
+        console.log(document.getElementById('printval').innerHTML=user_id_global);
+
+        // 마감 날짜 선택
+        $.datepicker.setDefaults({
+            dateFormat: 'yy/mm/dd',
+            prevText: '이전 달',
+            nextText: '다음 달',
+            monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+            monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+            dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+            dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+            dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+            showMonthAfterYear: true,
+            yearSuffix: '년'
+        });
+
+        $( function() {
+            $( "#datepicker" ).datepicker();
+        } );
+        // 마감일 출력
+        $("#btn_test").click(function(){
+            date = $("#datepicker").val()
+            console.log('마감일: ', date) // -> 2021/11/24 로 나옴
+            const splited_date = date.split('/');
+            console.log('년: ', splited_date[0])
+            splited_date[1] = splited_date[1].replace(/^0+/, ''); // 정규표현식을 통해 숫자앞에 붙은 0 제거
+            console.log('월: ', splited_date[1])
+            splited_date[2] = splited_date[2].replace(/^0+/, ''); // 정규표현식을 통해 숫자앞에 붙은 0 제거
+            console.log('일: ', splited_date[2])
+            /*
+            Number("03").toString() -> "3" 이 된다. (타입 캐스팅을 통한 0 제거)
+            */
+
+        });
+        // 할일추가
+        $("#btn_insert").click(function() {
+            insertDB(systemDB);
+        });
+
+        // 수정
+        $("body").on("click", ".btn_edit", function() {
+            var no = $(this).data("no");
+            var idx = $(this).data("idx");
+            update_index_global = idx
+            $("#id").val(idx);
+            loadRecord(no);
+        });
+
+        // 할일수정
+        $("#btn_update").click(function() {
+            //var idx = $("#id").val();
+            var idx = update_index_global;
+            updateDB(systemDB, idx);
+        });
+
+        // 삭제
+        $("body").on("click", ".btn_delete", function() {
+            var idx = $(this).data("idx");
+            console.log('btn_delete/idx2: ', idx);
+            console.log('btn_delete/$(this).data("idx"): ', $(this).data("idx"));
+            deleteDB(systemDB, idx);
+            selectAllList(systemDB, idx);
+        });
+        // 줄긋기
+        $(document).on('click', '.btn_check', function() {
+            var no = $(this).data("no");
+            // if ($(this).css('text-decoration-line') == "none")
+            //     $(this).css('text-decoration-line', 'line-through');
+            // else
+            //     $(this).css('text-decoration-line', 'none');
+            console.log('btn_check/no: ', no);
+            text = "#todo_entry" + no;
+            // if ($("#todo_entry").css('text-decoration-line') == "none")
+            //     $("#todo_entry").css('text-decoration-line', 'line-through');
+            // else
+            //     $("#todo_entry").css('text-decoration-line', 'none');
+            if ($(text).css('text-decoration-line') == "none")
+                $(text).css('text-decoration-line', 'line-through');
+            else
+                $(text).css('text-decoration-line', 'none');
+        });
+
+
+    });
+    function gotoToDo(){
+        window.location.href = "ToDo.html?index=" + user_id_global;
+    }
+    function gotoTeampage(){
+        window.location.href = "teampage.html?index=" + user_id_global;
+    }
+    function deleteDB(db, idx) {
+        if (Number(idx) <= 0) {
+            alert("삭제할 글을 선택해주세요.");
+            return;
+        }
+
+        if (!confirm("삭제를 하겠습니까?")) {
+            return;
+        }
+
+        var strSql = "DELETE FROM To_Do WHERE idx = ? and user_id = ?";
+        db.transaction(function (tx) {
+            tx.executeSql(strSql, [Number(idx), user_id_global], loadAndReset, errorHandler);
+        });
+        selectAllList(db)
+    }
+
+    function updateDB(db, idx) {
+        var strSql = "UPDATE To_Do SET personal_to_do = ?, deadline = ? WHERE user_id = ? and idx = ?";
+        //var username = $('#username').val().trim();
+        console.log('updateDB/idx: ', idx);
+        var deadline = $('#datepicker').val().trim();
+        var personal_to_do = $('#personal_to_do').val().trim();
+        // var idx = $("#id").val();
+
+        if (deadline === "" || personal_to_do === "" ) {
+            alert("날짜 선택 및 할일을 입력해주세요");
+            $('#deadline').focus();
+            return;
+        }
+
+        db.transaction(function (tx) {
+            tx.executeSql(strSql, [personal_to_do, deadline, user_id_global, idx], loadAndReset, errorHandler);
+        });
+        selectAllList(db)
+    }
+
+    function loadRecord(no) {
+        var item = dataset.item(no);
+        //$("#username").val((item['username']).toString());
+        $("#datepicker").val((item['deadline']).toString());
+        $("#personal_to_do").val((item['personal_to_do']).toString());
+    }
+
+
+
+    function initDatabase() {
+        if (!window.openDatabase) {
+            alert("현재 브라우저는 Web SQL Database를 지원하지 않습니다");
+        } else {
+            var shortName = 'Board1';
+            var version = '1.0';
+            var displayName = 'Board DB';
+            var maxSize = 1024 * 64; // in bytes
+            var db = openDatabase(shortName, version, displayName, maxSize);
+        }
+
+        selectAllList(db);
+        systemDB = db;
+    }
+    function insertDB(db) {
+        var strSql = "INSERT INTO To_Do (user_id, idx, personal_to_do, deadline) VALUES (?, ?, ?, ?)";
+        //var username = $('#username').val().trim();
+        var deadline = $('#datepicker').val().trim();
+        var personal_to_do = $('#personal_to_do').val().trim();
+
+        if (deadline === "" || personal_to_do === "" ) {
+            alert("날짜 선택 및 할일을 입력해주세요");
+            $('#deadline').focus();
+            return;
+        }
+
+        db.transaction(function (tx) {
+            tx.executeSql(strSql, [user_id_global, index_global+1, personal_to_do, deadline], loadAndReset, errorHandler);
+        });
+    }
+    function loadAndReset() {
+        resetForm();
+        selectAllList(systemDB);
+    }
+
+    function resetForm() {
+        //$("#username").val("");
+        $("#datepicker").val("");
+        $("#personal_to_do").val("");
+    }
+
+    function errorHandler(error) {
+        alert('Error: '+error.message+' (Code '+error.code+')');
+    }
+    function selectAllList(db) {
+        var strSql = "SELECT * FROM To_Do where user_id = ? order by idx";
+        $("#boardlist").html('');
+        db.transaction(function (tx) {
+            tx.executeSql(strSql, [user_id_global], function (tx, result) {
+                dataset = result.rows;
+                var str = "<ol>";
+                if (dataset.length > 0) {
+                    for (var i = 0, item = null; i < dataset.length; i++) {
+                        item = dataset.item(i);
+                        var text_entry = "todo_entry"+i
+                        // username(할일), content(마감일)
+                        // str += "<li id = 'todo_entry'>"
+                        //     + item['personal_to_do']+" : "+item['deadline']
+                        //     + " <span id='span_btn' type='button' class='btn_edit' data-no='"+i+"' data-idx='"+item['idx']+"'>수정</span>"
+                        //     + " <span id = 'span_btn' class='btn_delete' data-no='"+i+"' data-idx='"+item['idx']+"'>삭제</span>"
+                        //     + " <span id='span_btn' class='btn_check' data-no='"+i+"' data-idx='"+item['idx']+"'>✔</span>"
+                        //     + "</li>";
+                        str += "<li>"
+                            + " <span id='" + text_entry+ "'>" + item['personal_to_do']+" : "+item['deadline'] + "</span>"
+                            + " <span id='span_btn' type='button' class='btn_edit' data-no='"+i+"' data-idx='"+item['idx']+"'>수정</span>"
+                            + " <span id = 'span_btn' class='btn_delete' data-no='"+i+"' data-idx='"+item['idx']+"'>삭제</span>"
+                            + " <span id='span_btn' class='btn_check' data-no='"+i+"' data-idx='"+item['idx']+"'>✔</span>"
+                            + "</li>";
+                        index_global = item['idx'];
+
+                    }
+                } else {
+                    str += "리스트가 없습니다.";
+                }
+                str += "</ol>";
+                $("#boardlist").html(str);
+            });
+        });
+    }
+
+
+</script>
+</body>
+</html>
